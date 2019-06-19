@@ -1,0 +1,172 @@
+package com.airline.controllers;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.airline.models.Gender;
+import com.airline.models.Passenger;
+
+/**
+ * Servlet implementation class AddPassenger
+ */
+@WebServlet("/AddPassenger")
+public class AddPassenger extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+       
+    /**
+     * @see HttpServlet#HttpServlet()
+     */
+    public AddPassenger() {
+        super();
+        // TODO Auto-generated constructor stub
+    }
+
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		//response.getWriter().append("Served at: ").append(request.getContextPath());
+		
+		/*PrintWriter out = response.getWriter();
+		
+		response.setContentType("text/html");
+		
+		out.println("<html><body>");
+		out.println("<h2>Welcome to Neha Airlines!</h2>");
+		out.println("</body></html>");*/
+		
+		request.setAttribute("first_name", "");
+		request.setAttribute("last_name", "");
+		request.setAttribute("dob", "");
+		
+		RequestDispatcher requestDispatcher = request.getRequestDispatcher("WEB-INF/views/add_passenger.jsp");
+		requestDispatcher.forward(request, response);
+
+	}
+
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		
+		Passenger p = new Passenger();
+		
+		request.setAttribute("error", false);
+		
+		String firstName = request.getParameter("first-name");
+		System.out.println("First Name: "+ firstName);
+		
+		if(firstName.length() == 0)
+		{
+			System.out.println("First Name cannot be empty.");
+			
+			request.setAttribute("error", true);
+			request.setAttribute("firstNameError", true);
+			request.setAttribute("first_name", "");
+		}
+		else
+		{
+			p.setFirstName(firstName);
+			request.setAttribute("first_name", firstName);
+
+		}
+		
+		String lastName = request.getParameter("last-name");
+		System.out.println("Last Name: "+ lastName);
+		
+		if(lastName.length() == 0)
+		{
+			System.out.println("Last Name cannot be empty.");
+			
+			request.setAttribute("error", true);
+			request.setAttribute("lastNameError", true);
+			request.setAttribute("last_name", "");
+		}
+		else
+		{
+			p.setLastName(lastName);
+			request.setAttribute("last_name", lastName);
+
+		}
+		
+		String dob_raw = request.getParameter("dob");
+		
+		String regex = "^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$";
+		Pattern pattern = Pattern.compile(regex);
+		Matcher m = pattern.matcher(dob_raw);
+		System.out.println("DOB raw: "+ dob_raw);
+		
+		if(m.find())
+		{
+			String[] dobArray = dob_raw.split("\\/");
+			
+			int month = Integer.parseInt(dobArray[0]);
+			int date = Integer.parseInt(dobArray[1]);
+			int year = Integer.parseInt(dobArray[2]);
+			
+			Calendar cal = Calendar.getInstance();
+			cal.set(Calendar.MONTH, month);
+			cal.set(Calendar.DATE, date);
+			cal.set(Calendar.YEAR, year);
+
+			Date dob = cal.getTime();			
+			
+			System.out.println("DOB: "+ dob);
+			p.setDob(dob);
+			request.setAttribute("dob", dob_raw);
+
+		}
+		else
+		{
+			System.out.println("Please enter the date of birth in correct format");
+			request.setAttribute("error", true);
+			request.setAttribute("doberror", true);
+			request.setAttribute("dob", dob_raw);
+		}	
+	
+		
+		String gender = request.getParameter("gender");
+		System.out.println("Gender: "+ gender);
+		p.setGender(Gender.valueOf(gender));
+		
+		 
+		if((boolean) request.getAttribute("error"))
+		{
+			RequestDispatcher view = request.getRequestDispatcher(	"WEB-INF/views/add_passenger.jsp");
+			view.forward(request, response);
+		}
+		else
+		{
+			ServletContext sc = request.getServletContext();
+			
+			//ArrayList<Passenger> passengerList = new ArrayList<Passenger>();
+			
+			synchronized(this)
+			{
+			ArrayList<Passenger> passengerList = (ArrayList<Passenger>) sc.getAttribute("passengers");
+			passengerList.add(p);
+			
+			sc.setAttribute("passengers", passengerList);
+			}
+			
+			response.sendRedirect("");
+		}
+		
+	}
+
+}
